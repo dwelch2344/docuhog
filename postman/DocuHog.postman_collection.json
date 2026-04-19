@@ -1,0 +1,1009 @@
+{
+  "info": {
+    "name": "DocuHog - DocuSign Mock API",
+    "description": "Complete collection for testing DocuHog, a MailHog-style mock server for the DocuSign eSignature REST API.\n\nRun requests in order — the \"Auth\" folder first, then work through the scenarios.\n\nVariables like {{envelopeId}} and {{templateId}} are auto-set by test scripts when you create resources.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8025", "type": "string" },
+    { "key": "accountId", "value": "12345678-abcd-1234-efgh-123456789012", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "envelopeId", "value": "", "type": "string" },
+    { "key": "draftEnvelopeId", "value": "", "type": "string" },
+    { "key": "templateId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "description": "Get an access token. Run this first.",
+      "item": [
+        {
+          "name": "Get Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns access token', () => {",
+                  "  pm.expect(json.access_token).to.be.a('string');",
+                  "  pm.expect(json.token_type).to.eql('Bearer');",
+                  "  pm.expect(json.expires_in).to.eql(3600);",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', json.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "authorization_code" },
+                { "key": "code", "value": "mock-auth-code" },
+                { "key": "client_id", "value": "my-integration-key" }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth/token"
+          }
+        },
+        {
+          "name": "Get Access Token (JWT Grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns access token for JWT grant', () => {",
+                  "  pm.expect(json.access_token).to.be.a('string');",
+                  "  pm.expect(json.token_type).to.eql('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "urn:ietf:params:oauth:grant-type:jwt-bearer" },
+                { "key": "assertion", "value": "mock-jwt-assertion" }
+              ]
+            },
+            "url": "{{baseUrl}}/oauth/token"
+          }
+        },
+        {
+          "name": "Get User Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns user info with accounts', () => {",
+                  "  pm.expect(json.name).to.eql('DocuHog User');",
+                  "  pm.expect(json.email).to.eql('user@docuhog.local');",
+                  "  pm.expect(json.accounts).to.be.an('array');",
+                  "  pm.expect(json.accounts[0].account_id).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/oauth/userinfo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Account Info",
+      "description": "Account and login information endpoints.",
+      "item": [
+        {
+          "name": "Get Account Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns account info', () => {",
+                  "  pm.expect(json.accountId).to.be.a('string');",
+                  "  pm.expect(json.accountName).to.eql('DocuHog Test Account');",
+                  "  pm.expect(json.planName).to.eql('DocuHog Mock Plan');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}"
+          }
+        },
+        {
+          "name": "Get Login Information (Legacy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns login accounts', () => {",
+                  "  pm.expect(json.loginAccounts).to.be.an('array');",
+                  "  pm.expect(json.loginAccounts[0].name).to.eql('DocuHog Test Account');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/login_information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Envelopes - Full Lifecycle",
+      "description": "Create, send, list, update, void envelopes.",
+      "item": [
+        {
+          "name": "Create Envelope (Send Immediately)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 201 - Envelope created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Returns envelope ID and sent status', () => {",
+                  "  pm.expect(json.envelopeId).to.be.a('string');",
+                  "  pm.expect(json.status).to.eql('sent');",
+                  "});",
+                  "pm.collectionVariables.set('envelopeId', json.envelopeId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailSubject\": \"Please sign: Consulting Agreement\",\n  \"emailBlurb\": \"Please review and sign this consulting agreement at your earliest convenience.\",\n  \"status\": \"sent\",\n  \"recipients\": {\n    \"signers\": [\n      {\n        \"email\": \"alice@example.com\",\n        \"name\": \"Alice Johnson\",\n        \"recipientId\": \"1\",\n        \"routingOrder\": \"1\",\n        \"tabs\": {\n          \"signHereTabs\": [\n            {\n              \"documentId\": \"1\",\n              \"pageNumber\": \"1\",\n              \"xPosition\": \"200\",\n              \"yPosition\": \"400\"\n            }\n          ],\n          \"dateSignedTabs\": [\n            {\n              \"documentId\": \"1\",\n              \"pageNumber\": \"1\",\n              \"xPosition\": \"200\",\n              \"yPosition\": \"450\"\n            }\n          ]\n        }\n      },\n      {\n        \"email\": \"bob@example.com\",\n        \"name\": \"Bob Williams\",\n        \"recipientId\": \"2\",\n        \"routingOrder\": \"2\"\n      }\n    ],\n    \"carbonCopies\": [\n      {\n        \"email\": \"legal@example.com\",\n        \"name\": \"Legal Department\",\n        \"recipientId\": \"3\",\n        \"routingOrder\": \"3\"\n      }\n    ]\n  },\n  \"documents\": [\n    {\n      \"documentId\": \"1\",\n      \"name\": \"Consulting Agreement\",\n      \"fileExtension\": \"pdf\",\n      \"order\": \"1\"\n    },\n    {\n      \"documentId\": \"2\",\n      \"name\": \"Exhibit A - Statement of Work\",\n      \"fileExtension\": \"pdf\",\n      \"order\": \"2\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes"
+          }
+        },
+        {
+          "name": "Create Draft Envelope",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 201 - Draft created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Returns created (draft) status', () => {",
+                  "  pm.expect(json.envelopeId).to.be.a('string');",
+                  "  pm.expect(json.status).to.eql('created');",
+                  "});",
+                  "pm.collectionVariables.set('draftEnvelopeId', json.envelopeId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailSubject\": \"DRAFT: Employment Offer Letter\",\n  \"emailBlurb\": \"This is a draft offer letter for review.\",\n  \"status\": \"created\",\n  \"recipients\": {\n    \"signers\": [\n      {\n        \"email\": \"candidate@example.com\",\n        \"name\": \"Jane Candidate\",\n        \"recipientId\": \"1\",\n        \"routingOrder\": \"1\"\n      }\n    ]\n  },\n  \"documents\": [\n    {\n      \"documentId\": \"1\",\n      \"name\": \"Offer Letter\",\n      \"fileExtension\": \"pdf\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes"
+          }
+        },
+        {
+          "name": "Send Draft Envelope",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope status changed to sent', () => {",
+                  "  pm.expect(json.status).to.eql('sent');",
+                  "  pm.expect(json.envelopeId).to.eql(pm.collectionVariables.get('draftEnvelopeId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"sent\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}"
+          }
+        },
+        {
+          "name": "List All Envelopes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns envelope list', () => {",
+                  "  pm.expect(parseInt(json.totalSetSize)).to.be.greaterThan(0);",
+                  "  pm.expect(json.envelopes).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes?from_date=2020-01-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["restapi", "v2.1", "accounts", "{{accountId}}", "envelopes"],
+              "query": [
+                { "key": "from_date", "value": "2020-01-01" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Envelopes (Status Filter)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns only sent envelopes', () => {",
+                  "  if (json.envelopes) {",
+                  "    json.envelopes.forEach(e => {",
+                  "      pm.expect(e.status).to.eql('sent');",
+                  "    });",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes?from_date=2020-01-01&status=sent",
+              "host": ["{{baseUrl}}"],
+              "path": ["restapi", "v2.1", "accounts", "{{accountId}}", "envelopes"],
+              "query": [
+                { "key": "from_date", "value": "2020-01-01" },
+                { "key": "status", "value": "sent" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Envelopes (Search Text)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Search returns matching envelopes', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes?from_date=2020-01-01&search_text=Consulting",
+              "host": ["{{baseUrl}}"],
+              "path": ["restapi", "v2.1", "accounts", "{{accountId}}", "envelopes"],
+              "query": [
+                { "key": "from_date", "value": "2020-01-01" },
+                { "key": "search_text", "value": "Consulting" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Envelope",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns full envelope details', () => {",
+                  "  pm.expect(json.envelopeId).to.eql(pm.collectionVariables.get('envelopeId'));",
+                  "  pm.expect(json.emailSubject).to.be.a('string');",
+                  "  pm.expect(json.status).to.be.a('string');",
+                  "  pm.expect(json.createdDateTime).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{envelopeId}}"
+          }
+        },
+        {
+          "name": "Update Envelope (Change Subject)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope updated', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(json.envelopeId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailSubject\": \"UPDATED: Please sign - Consulting Agreement\",\n  \"emailBlurb\": \"Updated blurb text\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{envelopeId}}"
+          }
+        },
+        {
+          "name": "Void Envelope",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope voided', () => {",
+                  "  pm.expect(json.status).to.eql('voided');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"voided\",\n  \"voidedReason\": \"Contract terms changed — new version will be sent.\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{envelopeId}}"
+          }
+        },
+        {
+          "name": "Get Envelope (Not Found)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 404', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Returns error body', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.errorCode).to.eql('ENVELOPE_DOES_NOT_EXIST');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/nonexistent-id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Recipients",
+      "description": "Get and update envelope recipients.",
+      "item": [
+        {
+          "name": "Get Recipients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns recipients', () => {",
+                  "  pm.expect(json.signers || json.recipientCount).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/recipients"
+          }
+        },
+        {
+          "name": "Update Recipients (Add Signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Recipients updated', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(json.signers).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signers\": [\n    {\n      \"email\": \"new-signer@example.com\",\n      \"name\": \"New Signer\",\n      \"recipientId\": \"10\",\n      \"routingOrder\": \"5\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/recipients"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Documents",
+      "description": "List and download envelope documents.",
+      "item": [
+        {
+          "name": "List Documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns document list', () => {",
+                  "  pm.expect(json.envelopeId).to.be.a('string');",
+                  "  pm.expect(json.envelopeDocuments).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/documents"
+          }
+        },
+        {
+          "name": "Download Document (Placeholder PDF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns PDF content', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/documents/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Views",
+      "description": "Create recipient and sender signing/sending views.",
+      "item": [
+        {
+          "name": "Create Recipient View (Signing URL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns signing URL', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(json.url).to.be.a('string');",
+                  "  pm.expect(json.url).to.include('/signing/');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnUrl\": \"http://localhost:3000/signing/complete\",\n  \"authenticationMethod\": \"None\",\n  \"email\": \"candidate@example.com\",\n  \"userName\": \"Jane Candidate\",\n  \"clientUserId\": \"1001\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/views/recipient"
+          }
+        },
+        {
+          "name": "Create Sender View",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns sender URL', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(json.url).to.be.a('string');",
+                  "  pm.expect(json.url).to.include('/sending/');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnUrl\": \"http://localhost:3000/sending/complete\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/views/sender"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Audit & Notifications",
+      "description": "Envelope audit events and notification settings.",
+      "item": [
+        {
+          "name": "Get Audit Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns audit events', () => {",
+                  "  pm.expect(json.auditEvents).to.be.an('array');",
+                  "  pm.expect(json.auditEvents.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/audit_events"
+          }
+        },
+        {
+          "name": "Get Notification Settings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns notification settings', () => {",
+                  "  pm.expect(json.reminders || json.useAccountDefaults).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes/{{draftEnvelopeId}}/notification"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Templates",
+      "description": "Create, list, update, and delete templates.",
+      "item": [
+        {
+          "name": "Create Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 201 - Template created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Returns template ID', () => {",
+                  "  pm.expect(json.templateId).to.be.a('string');",
+                  "  pm.expect(json.name).to.eql('Standard NDA');",
+                  "});",
+                  "pm.collectionVariables.set('templateId', json.templateId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Standard NDA\",\n  \"description\": \"Mutual non-disclosure agreement for vendor onboarding\",\n  \"emailSubject\": \"Please sign: Non-Disclosure Agreement\",\n  \"emailBlurb\": \"Please review and sign the attached NDA.\",\n  \"recipients\": {\n    \"signers\": [\n      {\n        \"email\": \"signer@example.com\",\n        \"name\": \"Template Signer\",\n        \"recipientId\": \"1\",\n        \"routingOrder\": \"1\",\n        \"roleName\": \"Signer\"\n      }\n    ],\n    \"carbonCopies\": [\n      {\n        \"email\": \"legal@example.com\",\n        \"name\": \"Legal Team\",\n        \"recipientId\": \"2\",\n        \"routingOrder\": \"2\",\n        \"roleName\": \"Legal CC\"\n      }\n    ]\n  },\n  \"documents\": [\n    {\n      \"documentId\": \"1\",\n      \"name\": \"NDA Agreement\",\n      \"fileExtension\": \"pdf\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates"
+          }
+        },
+        {
+          "name": "List Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns template list', () => {",
+                  "  pm.expect(parseInt(json.totalSetSize)).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates"
+          }
+        },
+        {
+          "name": "List Templates (Search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates?search_text=NDA",
+              "host": ["{{baseUrl}}"],
+              "path": ["restapi", "v2.1", "accounts", "{{accountId}}", "templates"],
+              "query": [
+                { "key": "search_text", "value": "NDA" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns template details', () => {",
+                  "  pm.expect(json.templateId).to.eql(pm.collectionVariables.get('templateId'));",
+                  "  pm.expect(json.name).to.eql('Standard NDA');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates/{{templateId}}"
+          }
+        },
+        {
+          "name": "Update Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Template updated', () => {",
+                  "  pm.expect(json.name).to.eql('Standard NDA v2');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Standard NDA v2\",\n  \"description\": \"Updated NDA with revised terms\"\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates/{{templateId}}"
+          }
+        },
+        {
+          "name": "Create Envelope from Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Envelope created from template', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(json.envelopeId).to.be.a('string');",
+                  "  pm.expect(json.status).to.eql('sent');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateId\": \"{{templateId}}\",\n  \"status\": \"sent\",\n  \"templateRoles\": [\n    {\n      \"roleName\": \"Signer\",\n      \"name\": \"Charlie Brown\",\n      \"email\": \"charlie@example.com\"\n    },\n    {\n      \"roleName\": \"Legal CC\",\n      \"name\": \"Legal Dept\",\n      \"email\": \"legal@company.com\"\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/envelopes"
+          }
+        },
+        {
+          "name": "Delete Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Template deleted', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/restapi/v2.1/accounts/{{accountId}}/templates/{{templateId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Internal API (Web UI)",
+      "description": "DocuHog's internal API used by the web UI. Not part of the DocuSign API — these are DocuHog-specific.",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Health check passes', () => {",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.version).to.be.a('string');",
+                  "  pm.expect(json.uptime).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health"
+          }
+        },
+        {
+          "name": "Get Server Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns server config', () => {",
+                  "  pm.expect(json.port).to.be.a('number');",
+                  "  pm.expect(json.smtp).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/config"
+          }
+        },
+        {
+          "name": "Get Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns stats', () => {",
+                  "  pm.expect(json.totalEnvelopes).to.be.a('number');",
+                  "  pm.expect(json.totalTemplates).to.be.a('number');",
+                  "  pm.expect(json.envelopesByStatus).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/stats"
+          }
+        },
+        {
+          "name": "List Envelopes (Internal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Returns simplified envelope list', () => {",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.envelopes).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/envelopes"
+          }
+        },
+        {
+          "name": "List Templates (Internal)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/templates"
+          }
+        },
+        {
+          "name": "Delete All Envelopes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('All envelopes deleted', () => {",
+                  "  pm.expect(json.deleted).to.eql(true);",
+                  "  pm.expect(json.count).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/envelopes"
+          }
+        }
+      ]
+    }
+  ]
+}
