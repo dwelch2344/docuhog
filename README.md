@@ -3,8 +3,8 @@
 **Like MailHog, but for DocuSign.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
-[![npm](https://img.shields.io/badge/npm-docuhog-CB3837?logo=npm&logoColor=white)](package.json)
+[![Docker Image](https://img.shields.io/docker/v/welch/docuhog?sort=semver&logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/welch/docuhog)
+[![Image Size](https://img.shields.io/docker/image-size/welch/docuhog/latest?logo=docker&label=Image%20Size)](https://hub.docker.com/r/welch/docuhog)
 
 ---
 
@@ -46,8 +46,10 @@ docker compose up
 ### Docker (standalone)
 
 ```bash
-docker run -p 8025:8025 docuhog
+docker run -p 8025:8025 welch/docuhog
 ```
+
+Multi-arch images (amd64 + arm64) are published to [Docker Hub](https://hub.docker.com/r/welch/docuhog) on every release.
 
 Or use the standalone compose file (no MailHog):
 

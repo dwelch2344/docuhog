@@ -11,7 +11,8 @@
 
 services:
   docuhog:
-    build: .
+    image: welch/docuhog
+    build: .           # Used by "docker compose up --build" for local development
     ports:
       - "8025:8025"    # DocuHog UI + API
     environment:
