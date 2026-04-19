@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocuHog</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f437;</text></svg>">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a class="header-brand" href="/">
+      <!-- Hog/pig SVG icon -->
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Ears -->
+        <path d="M14 22 C10 14, 16 8, 22 14" stroke="#f8c9d2" stroke-width="2.5" fill="#f4a0b0" stroke-linecap="round"/>
+        <path d="M50 22 C54 14, 48 8, 42 14" stroke="#f8c9d2" stroke-width="2.5" fill="#f4a0b0" stroke-linecap="round"/>
+        <!-- Head -->
+        <ellipse cx="32" cy="34" rx="22" ry="19" fill="#f8c9d2" stroke="#e8a0b0" stroke-width="1.5"/>
+        <!-- Eyes -->
+        <circle cx="24" cy="30" r="2.5" fill="#2c3e50"/>
+        <circle cx="40" cy="30" r="2.5" fill="#2c3e50"/>
+        <circle cx="25" cy="29" r="0.8" fill="#fff"/>
+        <circle cx="41" cy="29" r="0.8" fill="#fff"/>
+        <!-- Snout -->
+        <ellipse cx="32" cy="38" rx="8" ry="5.5" fill="#f4a0b0" stroke="#e08898" stroke-width="1"/>
+        <circle cx="29" cy="38" r="1.5" fill="#d07080"/>
+        <circle cx="35" cy="38" r="1.5" fill="#d07080"/>
+        <!-- Mouth -->
+        <path d="M28 43 Q32 46 36 43" stroke="#d07080" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <!-- Document in mouth (signature motif) -->
+        <rect x="24" y="46" width="16" height="11" rx="1.5" fill="#fff" stroke="#b0bec5" stroke-width="1"/>
+        <line x1="27" y1="49" x2="37" y2="49" stroke="#c8d6e5" stroke-width="0.8"/>
+        <line x1="27" y1="51.5" x2="34" y2="51.5" stroke="#c8d6e5" stroke-width="0.8"/>
+        <path d="M29 54 Q31 52 33 54 Q35 56 37 54" stroke="#3a7bd5" stroke-width="1" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h1>DocuHog <span class="subtitle">DocuSign Mock Server</span></h1>
+    </a>
+    <div class="header-right">
+      <div class="connection-status">
+        <span class="connection-dot" id="connection-dot"></span>
+        <span id="connection-label">Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="envelopes">Envelopes</button>
+    <button class="nav-tab" data-tab="templates">Templates</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="app-content">
+    <!-- Rendered by app.js -->
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
