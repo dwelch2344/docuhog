@@ -1,0 +1,36 @@
+# DocuHog with MailHog
+#
+# Start everything:  docker compose up
+# Rebuild & start:   docker compose up --build
+#
+# DocuHog UI + API:  http://localhost:8025
+# MailHog Web UI:    http://localhost:8026
+#
+# Point your app at DocuHog by setting:
+#   DOCUSIGN_BASE_URL=http://localhost:8025
+
+services:
+  docuhog:
+    build: .
+    ports:
+      - "8025:8025"    # DocuHog UI + API
+    environment:
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+    # Uncomment to persist data across container restarts:
+    # volumes:
+    #   - docuhog-data:/data
+    depends_on:
+      - mailhog
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8026:8025"    # MailHog Web UI (8026 to avoid port conflict with DocuHog)
+      - "1025:1025"    # SMTP
+    restart: unless-stopped
+
+# Uncomment for persistent storage:
+# volumes:
+#   docuhog-data:

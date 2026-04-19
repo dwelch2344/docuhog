@@ -1,0 +1,31 @@
+# DocuHog standalone (no MailHog)
+#
+# Start:    docker compose -f docker-compose.standalone.yml up
+# Rebuild:  docker compose -f docker-compose.standalone.yml up --build
+#
+# DocuHog UI + API:  http://localhost:8025
+#
+# Point your app at DocuHog by setting:
+#   DOCUSIGN_BASE_URL=http://localhost:8025
+
+services:
+  docuhog:
+    build: .
+    ports:
+      - "8025:8025"    # DocuHog UI + API
+    environment:
+      - PORT=8025
+      # Configure an external SMTP server for email notifications:
+      # - SMTP_HOST=smtp.example.com
+      # - SMTP_PORT=587
+      # - SMTP_SECURE=true
+      # - SMTP_USER=user@example.com
+      # - SMTP_PASS=your-password
+    # Uncomment to persist data across container restarts:
+    # volumes:
+    #   - docuhog-data:/data
+    restart: unless-stopped
+
+# Uncomment for persistent storage:
+# volumes:
+#   docuhog-data:
