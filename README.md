@@ -12,6 +12,8 @@
 
 DocuHog is a local mock server for the [DocuSign eSignature REST API](https://developers.docusign.com/docs/esign-rest-api/). If you've ever used [MailHog](https://github.com/mailhog/MailHog) to catch outgoing emails during development, DocuHog does the same thing for DocuSign API calls. Point your app at DocuHog instead of DocuSign's sandbox, and every envelope, template, and signing request is captured locally and viewable in a web UI -- no DocuSign developer account, no internet connection, no rate limits.
 
+![DocuHog + MailHog side by side](docs/img/works-with-mailhog.png)
+
 ## Features
 
 - **Drop-in replacement** -- change one URL and your app talks to DocuHog instead of DocuSign
@@ -196,6 +198,10 @@ These endpoints power the DocuHog web UI and are not part of the DocuSign API:
 
 For full request/response examples, see [docs/API.md](docs/API.md).
 
+A [Postman collection](postman/DocuHog.postman_collection.json) is included with 36 pre-built requests covering every endpoint.
+
+![Postman collection](docs/img/ships-with-postman-collection.png)
+
 ## Web UI
 
 Open [http://localhost:8025](http://localhost:8025) in your browser to see the DocuHog web UI. It shows:
@@ -203,6 +209,8 @@ Open [http://localhost:8025](http://localhost:8025) in your browser to see the D
 - A list of all captured envelopes with their status, recipients, and timestamps
 - Envelope details including the full JSON payload your app sent
 - Quick overview of recent activity
+
+![Envelope detail view](docs/img/view-envelope-details.png)
 
 The web UI is served directly by the DocuHog Express server -- there is nothing extra to install or configure.
 
@@ -218,6 +226,8 @@ docker compose up
 - MailHog captures the notification emails at [http://localhost:8026](http://localhost:8026)
 
 This gives you a complete local testing loop: your app sends an envelope through DocuHog, DocuHog fires a notification email to MailHog, and you can inspect both the API payload and the email without anything leaving your machine.
+
+![Email preview in MailHog](docs/img/preview-live-emails.png)
 
 To use a different SMTP provider (Mailtrap, SendGrid, Gmail SMTP, etc.), see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
