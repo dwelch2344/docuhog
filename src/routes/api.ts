@@ -70,9 +70,7 @@ router.get('/envelopes', (req: Request, res: Response) => {
   const status = req.query.status as string | undefined;
   if (status) {
     const statuses = status.split(',').map((s) => s.trim().toLowerCase());
-    envelopes = envelopes.filter((e) =>
-      statuses.includes(e.status.toLowerCase())
-    );
+    envelopes = envelopes.filter((e) => statuses.includes(e.status.toLowerCase()));
   }
 
   const result = envelopes.map((e) => ({
@@ -144,8 +142,7 @@ router.get('/templates', (_req: Request, res: Response) => {
     lastModified: t.lastModified,
     owner: t.owner,
     recipientCount:
-      (t.recipients?.signers?.length || 0) +
-      (t.recipients?.carbonCopies?.length || 0),
+      (t.recipients?.signers?.length || 0) + (t.recipients?.carbonCopies?.length || 0),
     documentCount: t.documents?.length || 0,
   }));
 

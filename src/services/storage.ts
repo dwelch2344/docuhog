@@ -67,9 +67,7 @@ export function listEnvelopes(): Envelope[] {
   }
   // Sort by creation date descending (newest first)
   envelopes.sort(
-    (a, b) =>
-      new Date(b.createdDateTime).getTime() -
-      new Date(a.createdDateTime).getTime()
+    (a, b) => new Date(b.createdDateTime).getTime() - new Date(a.createdDateTime).getTime()
   );
   return envelopes;
 }
@@ -118,10 +116,7 @@ export function listTemplates(): Template[] {
       // Skip malformed files
     }
   }
-  templates.sort(
-    (a, b) =>
-      new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
-  );
+  templates.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
   return templates;
 }
 

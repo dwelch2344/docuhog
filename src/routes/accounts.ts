@@ -18,32 +18,29 @@ function param(req: Request, name: string): string {
 }
 
 // GET /restapi/v2.1/accounts/:accountId — Return mock account info
-router.get(
-  '/restapi/v2.1/accounts/:accountId',
-  (req: Request, res: Response) => {
-    const accountId = param(req, 'accountId');
+router.get('/restapi/v2.1/accounts/:accountId', (req: Request, res: Response) => {
+  const accountId = param(req, 'accountId');
 
-    const accountInfo: AccountInfo = {
-      accountId,
-      accountName: 'DocuHog Test Account',
-      accountIdGuid: accountId,
-      baseUri: `http://localhost:${config.port}/restapi`,
-      isDefault: 'true',
-      planId: 'docuhog-mock-plan',
-      currentPlanId: 'docuhog-mock-plan',
-      planName: 'DocuHog Mock Plan',
-      planStartDate: '2024-01-01T00:00:00.000Z',
-      canUpgrade: 'false',
-      billingPeriodStartDate: '2024-01-01T00:00:00.000Z',
-      billingPeriodEndDate: '2099-12-31T23:59:59.000Z',
-      billingPeriodEnvelopesAllowed: 'unlimited',
-      billingPeriodEnvelopesSent: '0',
-      billingPeriodDaysRemaining: '99999',
-    };
+  const accountInfo: AccountInfo = {
+    accountId,
+    accountName: 'DocuHog Test Account',
+    accountIdGuid: accountId,
+    baseUri: `http://localhost:${config.port}/restapi`,
+    isDefault: 'true',
+    planId: 'docuhog-mock-plan',
+    currentPlanId: 'docuhog-mock-plan',
+    planName: 'DocuHog Mock Plan',
+    planStartDate: '2024-01-01T00:00:00.000Z',
+    canUpgrade: 'false',
+    billingPeriodStartDate: '2024-01-01T00:00:00.000Z',
+    billingPeriodEndDate: '2099-12-31T23:59:59.000Z',
+    billingPeriodEnvelopesAllowed: 'unlimited',
+    billingPeriodEnvelopesSent: '0',
+    billingPeriodDaysRemaining: '99999',
+  };
 
-    res.json(accountInfo);
-  }
-);
+  res.json(accountInfo);
+});
 
 // GET /restapi/v2.1/login_information — Return mock login info
 router.get('/restapi/v2.1/login_information', (_req: Request, res: Response) => {

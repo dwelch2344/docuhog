@@ -54,8 +54,7 @@ function buildRecipients(
   input: Recipients | undefined,
   envelopeStatus: EnvelopeStatus
 ): Recipients {
-  const recipientStatus =
-    envelopeStatus === 'sent' ? 'sent' : 'created';
+  const recipientStatus = envelopeStatus === 'sent' ? 'sent' : 'created';
   const result: Recipients = {};
   let count = 0;
 
@@ -84,9 +83,7 @@ function buildRecipients(
       return buildRecipient(
         r,
         'certifiedDelivery',
-        (result.signers?.length || 0) +
-          (result.carbonCopies?.length || 0) +
-          i,
+        (result.signers?.length || 0) + (result.carbonCopies?.length || 0) + i,
         recipientStatus
       );
     });
@@ -97,9 +94,7 @@ function buildRecipients(
   return result;
 }
 
-function buildDocuments(
-  input: Partial<Document>[] | undefined
-): Document[] {
+function buildDocuments(input: Partial<Document>[] | undefined): Document[] {
   if (!input || input.length === 0) {
     return [
       {
@@ -134,11 +129,7 @@ function buildDocuments(
   }));
 }
 
-function createAuditEvent(
-  action: string,
-  status: string,
-  envelope: Envelope
-): EnvelopeAuditEvent {
+function createAuditEvent(action: string, status: string, envelope: Envelope): EnvelopeAuditEvent {
   return {
     eventFields: [
       { name: 'logTime', value: nowIso() },
@@ -162,8 +153,7 @@ export function createEnvelope(
 ): { envelope: Envelope; summary: EnvelopeSummary } {
   const now = nowIso();
   const envelopeId = uuidv4();
-  const status: EnvelopeStatus =
-    definition.status === 'sent' ? 'sent' : 'created';
+  const status: EnvelopeStatus = definition.status === 'sent' ? 'sent' : 'created';
 
   // Handle template-based envelope creation
   let recipients = definition.recipients;
@@ -181,9 +171,7 @@ export function createEnvelope(
       // Apply template roles
       if (definition.templateRoles && recipients?.signers) {
         for (const role of definition.templateRoles) {
-          const signer = recipients.signers.find(
-            (s) => s.roleName === role.roleName
-          );
+          const signer = recipients.signers.find((s) => s.roleName === role.roleName);
           if (signer) {
             signer.name = role.name;
             signer.email = role.email;
@@ -241,10 +229,7 @@ export function createEnvelope(
   // If sending, trigger email notifications
   if (status === 'sent') {
     sendEnvelopeNotifications(envelope).catch((err) => {
-      console.error(
-        `[Envelope] Failed to send notifications for ${envelopeId}:`,
-        err
-      );
+      console.error(`[Envelope] Failed to send notifications for ${envelopeId}:`, err);
     });
   }
 
@@ -261,6 +246,9 @@ export function createEnvelope(
 export function sendEnvelope(envelopeId: string): Envelope | null {
   const envelope = storage.getEnvelope(envelopeId);
   if (!envelope) return null;
+
+  // Only envelopes in 'created' status can be sent
+  if (envelope.status !== 'created') return null;
 
   const now = nowIso();
   envelope.status = 'sent';
@@ -288,10 +276,7 @@ export function sendEnvelope(envelopeId: string): Envelope | null {
 
   // Trigger email notifications
   sendEnvelopeNotifications(envelope).catch((err) => {
-    console.error(
-      `[Envelope] Failed to send notifications for ${envelopeId}:`,
-      err
-    );
+    console.error(`[Envelope] Failed to send notifications for ${envelopeId}:`, err);
   });
 
   return envelope;
@@ -300,12 +285,12 @@ export function sendEnvelope(envelopeId: string): Envelope | null {
 export function voidEnvelope(
   envelopeId: string,
   voidedReason: string
-): Envelope | null {
+): { error: 'not_found' } | { error: 'invalid_status' } | { envelope: Envelope } {
   const envelope = storage.getEnvelope(envelopeId);
-  if (!envelope) return null;
+  if (!envelope) return { error: 'not_found' };
 
   if (envelope.status !== 'sent' && envelope.status !== 'delivered') {
-    return null;
+    return { error: 'invalid_status' };
   }
 
   const now = nowIso();
@@ -316,7 +301,7 @@ export function voidEnvelope(
   envelope.lastModifiedDateTime = now;
 
   storage.saveEnvelope(envelope);
-  return envelope;
+  return { envelope };
 }
 
 export function getEnvelope(envelopeId: string): Envelope | null {
@@ -335,13 +320,6 @@ export function updateEnvelope(
   // Handle status change
   if (updates.status === 'sent' && envelope.status === 'created') {
     return sendEnvelope(envelopeId);
-  }
-
-  if (
-    updates.status === 'voided' &&
-    (envelope as Envelope & { voidedReason?: string }).voidedReason
-  ) {
-    // voidedReason handled via the voided status path in route handler
   }
 
   if (updates.emailSubject !== undefined) {
@@ -364,7 +342,6 @@ export function updateEnvelope(
   }
 
   envelope.lastModifiedDateTime = now;
-  envelope.statusChangedDateTime = now;
 
   storage.saveEnvelope(envelope);
   return envelope;
@@ -379,17 +356,13 @@ export function listEnvelopes(filters?: {
 
   if (filters?.status) {
     const statuses = filters.status.split(',').map((s) => s.trim().toLowerCase());
-    envelopes = envelopes.filter((e) =>
-      statuses.includes(e.status.toLowerCase())
-    );
+    envelopes = envelopes.filter((e) => statuses.includes(e.status.toLowerCase()));
   }
 
   if (filters?.fromDate) {
     const fromDate = new Date(filters.fromDate);
     if (!isNaN(fromDate.getTime())) {
-      envelopes = envelopes.filter(
-        (e) => new Date(e.createdDateTime) >= fromDate
-      );
+      envelopes = envelopes.filter((e) => new Date(e.createdDateTime) >= fromDate);
     }
   }
 
@@ -400,9 +373,7 @@ export function listEnvelopes(filters?: {
         e.emailSubject.toLowerCase().includes(text) ||
         e.envelopeId.toLowerCase().includes(text) ||
         e.recipients?.signers?.some(
-          (s) =>
-            s.name.toLowerCase().includes(text) ||
-            s.email.toLowerCase().includes(text)
+          (s) => s.name.toLowerCase().includes(text) || s.email.toLowerCase().includes(text)
         )
     );
   }
@@ -427,10 +398,7 @@ export function getAuditEvents(envelopeId: string): EnvelopeAuditEvent[] | null 
     events.push(createAuditEvent('Sent', 'sent', envelope));
   }
 
-  if (
-    envelope.status === 'delivered' ||
-    envelope.status === 'completed'
-  ) {
+  if (envelope.status === 'delivered' || envelope.status === 'completed') {
     events.push(createAuditEvent('Delivered', 'delivered', envelope));
   }
 
@@ -460,8 +428,9 @@ export function updateRecipients(
 
   if (recipientsUpdate.signers) {
     if (!envelope.recipients) envelope.recipients = {};
-    envelope.recipients.signers = recipientsUpdate.signers.map((s, i) =>
-      buildRecipient(s, 'signer', i, envelope.status === 'created' ? 'created' : 'sent') as Signer
+    envelope.recipients.signers = recipientsUpdate.signers.map(
+      (s, i) =>
+        buildRecipient(s, 'signer', i, envelope.status === 'created' ? 'created' : 'sent') as Signer
     );
   }
 
@@ -482,7 +451,8 @@ export function updateRecipients(
   let count = 0;
   if (envelope.recipients?.signers) count += envelope.recipients.signers.length;
   if (envelope.recipients?.carbonCopies) count += envelope.recipients.carbonCopies.length;
-  if (envelope.recipients?.certifiedDeliveries) count += envelope.recipients.certifiedDeliveries.length;
+  if (envelope.recipients?.certifiedDeliveries)
+    count += envelope.recipients.certifiedDeliveries.length;
   if (envelope.recipients) {
     envelope.recipients.recipientCount = String(count);
   }

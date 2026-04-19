@@ -22,7 +22,7 @@ function param(req: Request, name: string): string {
 
 // Minimal valid PDF (a single blank page)
 const PLACEHOLDER_PDF = Buffer.from(
-  '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n190\n%%EOF',
+  '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n186\n%%EOF',
   'utf-8'
 );
 
@@ -34,17 +34,14 @@ router.post('/', (req: Request, res: Response) => {
   if (!definition.emailSubject && !definition.templateId) {
     res.status(400).json({
       errorCode: 'INVALID_REQUEST_PARAMETER',
-      message:
-        'The request contained at least one invalid parameter. emailSubject is required.',
+      message: 'The request contained at least one invalid parameter. emailSubject is required.',
     });
     return;
   }
 
   const { summary } = envelopeService.createEnvelope(definition, accountId);
 
-  console.log(
-    `[Envelopes] Created envelope ${summary.envelopeId} (status: ${summary.status})`
-  );
+  console.log(`[Envelopes] Created envelope ${summary.envelopeId} (status: ${summary.status})`);
 
   res.status(201).json(summary);
 });
@@ -94,15 +91,22 @@ router.put('/:envelopeId', (req: Request, res: Response) => {
   // Handle void
   if (body.status === 'voided') {
     const voidedReason = body.voidedReason || 'Voided by user';
-    const envelope = envelopeService.voidEnvelope(envelopeId, voidedReason);
-    if (!envelope) {
-      res.status(400).json({
-        errorCode: 'ENVELOPE_CANNOT_VOID',
-        message:
-          'Only envelopes in "sent" or "delivered" status can be voided.',
-      });
+    const result = envelopeService.voidEnvelope(envelopeId, voidedReason);
+    if ('error' in result) {
+      if (result.error === 'not_found') {
+        res.status(404).json({
+          errorCode: 'ENVELOPE_DOES_NOT_EXIST',
+          message: `The envelope ${envelopeId} does not exist.`,
+        });
+      } else {
+        res.status(400).json({
+          errorCode: 'ENVELOPE_CANNOT_VOID',
+          message: 'Only envelopes in "sent" or "delivered" status can be voided.',
+        });
+      }
       return;
     }
+    const envelope = result.envelope;
     console.log(`[Envelopes] Voided envelope ${envelopeId}`);
     res.json({
       envelopeId: envelope.envelopeId,
@@ -117,10 +121,19 @@ router.put('/:envelopeId', (req: Request, res: Response) => {
   if (body.status === 'sent') {
     const envelope = envelopeService.sendEnvelope(envelopeId);
     if (!envelope) {
-      res.status(404).json({
-        errorCode: 'ENVELOPE_DOES_NOT_EXIST',
-        message: `The envelope ${envelopeId} does not exist.`,
-      });
+      // Could be not found or wrong status — check which
+      const existing = envelopeService.getEnvelope(envelopeId);
+      if (!existing) {
+        res.status(404).json({
+          errorCode: 'ENVELOPE_DOES_NOT_EXIST',
+          message: `The envelope ${envelopeId} does not exist.`,
+        });
+      } else {
+        res.status(400).json({
+          errorCode: 'ENVELOPE_INVALID_STATUS',
+          message: `The envelope is in "${existing.status}" status and cannot be sent. Only "created" envelopes can be sent.`,
+        });
+      }
       return;
     }
     console.log(`[Envelopes] Sent envelope ${envelopeId}`);
@@ -198,39 +211,31 @@ router.get('/:envelopeId/documents', (req: Request, res: Response) => {
 });
 
 // GET /:envelopeId/documents/:documentId — Get document content
-router.get(
-  '/:envelopeId/documents/:documentId',
-  (req: Request, res: Response) => {
-    const envelopeId = param(req, 'envelopeId');
-    const documentId = param(req, 'documentId');
-    const envelope = envelopeService.getEnvelope(envelopeId);
-    if (!envelope) {
-      res.status(404).json({
-        errorCode: 'ENVELOPE_DOES_NOT_EXIST',
-        message: `The envelope ${envelopeId} does not exist.`,
-      });
-      return;
-    }
-
-    const doc = envelope.documents?.find(
-      (d) => d.documentId === documentId
-    );
-    if (!doc) {
-      res.status(404).json({
-        errorCode: 'DOCUMENT_DOES_NOT_EXIST',
-        message: `The document ${documentId} does not exist in envelope ${envelopeId}.`,
-      });
-      return;
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${doc.name || 'document'}.pdf"`
-    );
-    res.send(PLACEHOLDER_PDF);
+router.get('/:envelopeId/documents/:documentId', (req: Request, res: Response) => {
+  const envelopeId = param(req, 'envelopeId');
+  const documentId = param(req, 'documentId');
+  const envelope = envelopeService.getEnvelope(envelopeId);
+  if (!envelope) {
+    res.status(404).json({
+      errorCode: 'ENVELOPE_DOES_NOT_EXIST',
+      message: `The envelope ${envelopeId} does not exist.`,
+    });
+    return;
   }
-);
+
+  const doc = envelope.documents?.find((d) => d.documentId === documentId);
+  if (!doc) {
+    res.status(404).json({
+      errorCode: 'DOCUMENT_DOES_NOT_EXIST',
+      message: `The document ${documentId} does not exist in envelope ${envelopeId}.`,
+    });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${doc.name || 'document'}.pdf"`);
+  res.send(PLACEHOLDER_PDF);
+});
 
 // POST /:envelopeId/views/recipient — Create recipient view (embedded signing URL)
 router.post('/:envelopeId/views/recipient', (req: Request, res: Response) => {
@@ -255,9 +260,7 @@ router.post('/:envelopeId/views/recipient', (req: Request, res: Response) => {
     url: mockSigningUrl,
   };
 
-  console.log(
-    `[Envelopes] Created recipient view for envelope ${envelopeId}`
-  );
+  console.log(`[Envelopes] Created recipient view for envelope ${envelopeId}`);
   res.status(201).json(response);
 });
 
@@ -281,9 +284,7 @@ router.post('/:envelopeId/views/sender', (req: Request, res: Response) => {
     url: mockSenderUrl,
   };
 
-  console.log(
-    `[Envelopes] Created sender view for envelope ${envelopeId}`
-  );
+  console.log(`[Envelopes] Created sender view for envelope ${envelopeId}`);
   res.status(201).json(response);
 });
 

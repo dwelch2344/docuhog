@@ -51,9 +51,24 @@ export interface Tabs {
   envelopeIdTabs?: Tab[];
 }
 
-export type RecipientType = 'signer' | 'cc' | 'certifiedDelivery' | 'inPersonSigner' | 'agent' | 'editor' | 'intermediary' | 'witness';
+export type RecipientType =
+  | 'signer'
+  | 'cc'
+  | 'certifiedDelivery'
+  | 'inPersonSigner'
+  | 'agent'
+  | 'editor'
+  | 'intermediary'
+  | 'witness';
 
-export type RecipientStatus = 'created' | 'sent' | 'delivered' | 'signed' | 'completed' | 'declined' | 'autoresponded';
+export type RecipientStatus =
+  | 'created'
+  | 'sent'
+  | 'delivered'
+  | 'signed'
+  | 'completed'
+  | 'declined'
+  | 'autoresponded';
 
 export interface Recipient {
   recipientId: string;

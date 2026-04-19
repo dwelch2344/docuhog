@@ -35,11 +35,7 @@ function main(): void {
     );
     console.log(`  Log Level:   ${config.logLevel}`);
     console.log('');
-    console.log(
-      '  Set DOCUSIGN_BASE_URL=http://localhost:' +
-        config.port +
-        '/restapi in your app'
-    );
+    console.log('  Set DOCUSIGN_BASE_URL=http://localhost:' + config.port + '/restapi in your app');
     console.log('');
   });
 }

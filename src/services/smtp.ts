@@ -10,9 +10,7 @@ let smtpConfigured = false;
 
 export function initSmtp(): void {
   if (!config.smtpHost) {
-    console.warn(
-      '[SMTP] No SMTP_HOST configured — email notifications will be skipped'
-    );
+    console.warn('[SMTP] No SMTP_HOST configured — email notifications will be skipped');
     return;
   }
 
@@ -51,9 +49,8 @@ function buildSigningEmailHtml(envelope: Envelope, recipient: Recipient): string
   const subject = envelope.emailSubject || 'Please sign this document';
   const blurb = envelope.emailBlurb || '';
   const documentList =
-    envelope.documents
-      ?.map((doc) => `<li>${doc.name || 'Document'}</li>`)
-      .join('') || '<li>Document</li>';
+    envelope.documents?.map((doc) => `<li>${doc.name || 'Document'}</li>`).join('') ||
+    '<li>Document</li>';
 
   return `
 <!DOCTYPE html>
@@ -195,9 +192,7 @@ function buildCcEmailHtml(envelope: Envelope, recipient: Recipient): string {
 </html>`;
 }
 
-export async function sendEnvelopeNotifications(
-  envelope: Envelope
-): Promise<void> {
+export async function sendEnvelopeNotifications(envelope: Envelope): Promise<void> {
   if (!smtpConfigured || !transporter) {
     console.log(
       `[SMTP] Skipping notifications for envelope ${envelope.envelopeId} — SMTP not configured`

@@ -3,7 +3,6 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import { OAuthToken, UserInfo } from '../types/docusign';
 
 const router = Router();
@@ -62,11 +61,7 @@ router.get('/userinfo', (_req: Request, res: Response) => {
 });
 
 // Auth middleware — accepts any Bearer token (permissive)
-export function authMiddleware(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): void {
+export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   // We accept any token (or no token) — DocuHog is permissive.
   // Just log if a token is present for debugging.
   const authHeader = req.headers.authorization;

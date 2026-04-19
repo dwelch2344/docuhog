@@ -81,9 +81,7 @@ router.get('/', (req: Request, res: Response) => {
   if (searchText) {
     const text = searchText.toLowerCase();
     templates = templates.filter(
-      (t) =>
-        t.name.toLowerCase().includes(text) ||
-        t.description?.toLowerCase().includes(text)
+      (t) => t.name.toLowerCase().includes(text) || t.description?.toLowerCase().includes(text)
     );
   }
 
@@ -132,8 +130,7 @@ router.put('/:templateId', (req: Request, res: Response) => {
   if (body.emailSubject !== undefined) template.emailSubject = body.emailSubject;
   if (body.emailBlurb !== undefined) template.emailBlurb = body.emailBlurb;
   if (body.recipients !== undefined) template.recipients = body.recipients;
-  if (body.documents !== undefined)
-    template.documents = body.documents as Template['documents'];
+  if (body.documents !== undefined) template.documents = body.documents as Template['documents'];
   if (body.customFields !== undefined) template.customFields = body.customFields;
   if (body.notification !== undefined) template.notification = body.notification;
   if (body.shared !== undefined) template.shared = body.shared;
@@ -142,9 +139,7 @@ router.put('/:templateId', (req: Request, res: Response) => {
 
   storage.saveTemplate(template);
 
-  console.log(
-    `[Templates] Updated template ${templateId}: "${template.name}"`
-  );
+  console.log(`[Templates] Updated template ${templateId}: "${template.name}"`);
 
   const summary: TemplateSummary = {
     templateId: template.templateId,

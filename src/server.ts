@@ -40,10 +40,9 @@ export function createApp(): express.Application {
   // --- Static files (Web UI) ---
   // In development (ts-node), serve from src/ui/
   // In production (compiled), serve from dist/ui/ which should be copied to public/
-  const uiPath =
-    __dirname.includes('dist')
-      ? path.join(__dirname, '..', 'public')
-      : path.join(__dirname, 'ui');
+  const uiPath = __dirname.includes('dist')
+    ? path.join(__dirname, '..', 'public')
+    : path.join(__dirname, 'ui');
   app.use(express.static(uiPath));
 
   // --- API Routes ---
@@ -58,16 +57,10 @@ export function createApp(): express.Application {
   app.use(accountsRouter);
 
   // Envelope API
-  app.use(
-    '/restapi/v2.1/accounts/:accountId/envelopes',
-    envelopesRouter
-  );
+  app.use('/restapi/v2.1/accounts/:accountId/envelopes', envelopesRouter);
 
   // Template API
-  app.use(
-    '/restapi/v2.1/accounts/:accountId/templates',
-    templatesRouter
-  );
+  app.use('/restapi/v2.1/accounts/:accountId/templates', templatesRouter);
 
   // Internal API for Web UI
   app.use('/api/v1', apiRouter);
