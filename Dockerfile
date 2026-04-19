@@ -17,8 +17,8 @@ FROM node:22-alpine AS production
 
 LABEL org.opencontainers.image.title="DocuHog" \
       org.opencontainers.image.description="A MailHog-style mock server for the DocuSign eSignature REST API" \
-      org.opencontainers.image.url="https://github.com/docusign/docuhog" \
-      org.opencontainers.image.source="https://github.com/docusign/docuhog" \
+      org.opencontainers.image.url="https://github.com/dwelch2344/docuhog" \
+      org.opencontainers.image.source="https://github.com/dwelch2344/docuhog" \
       org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app

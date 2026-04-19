@@ -35,7 +35,7 @@ You can be up and running in under two minutes. Pick whichever method suits you.
 This starts DocuHog alongside MailHog so envelope notification emails are captured too.
 
 ```bash
-git clone https://github.com/docusign/docuhog.git
+git clone https://github.com/dwelch2344/docuhog.git
 cd docuhog
 docker compose up
 ```
@@ -60,7 +60,7 @@ docker compose -f docker-compose.standalone.yml up
 Requires Node.js 22 or later.
 
 ```bash
-git clone https://github.com/docusign/docuhog.git
+git clone https://github.com/dwelch2344/docuhog.git
 cd docuhog
 npm install
 npm run dev
