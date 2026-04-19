@@ -41,7 +41,7 @@ export function createApp(): express.Application {
   // In development (ts-node), serve from src/ui/
   // In production (compiled), serve from dist/ui/ which should be copied to public/
   const uiPath = __dirname.includes('dist')
-    ? path.join(__dirname, '..', 'public')
+    ? path.join(__dirname, 'ui')
     : path.join(__dirname, 'ui');
   app.use(express.static(uiPath));
 
